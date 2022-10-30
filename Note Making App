@@ -1,0 +1,393 @@
+MainPage.xaml
+
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="NoteTakingApp.MainPage">
+
+    <StackLayout Orientation="Vertical" BackgroundColor="White">
+
+        <StackLayout Orientation="Horizontal" BackgroundColor="LightCyan">
+            <Label Text="My Notes"
+                   HeightRequest="70" 
+                   TextColor="DarkBlue" 
+                   FontSize="33" 
+                   FontAttributes="Bold" 
+                   Padding="0,10,0,0" 
+                   Margin="10,10,0,0"/>
+            <Button Text="+"  
+                    FontSize="33" 
+                    TextColor="LightCyan"  
+                    BackgroundColor="DarkBlue" 
+                    CornerRadius="20" 
+                    Clicked="Button_Clicked" 
+                    HorizontalOptions="EndAndExpand"
+                    Margin="0,15,10,10" 
+                    Padding="0,0,0,0">
+                
+            </Button>
+            
+        </StackLayout>
+        <CollectionView x:Name="TheCollectionView"
+                        SelectionMode ="Single">
+            <CollectionView.ItemTemplate>
+                
+                <DataTemplate>
+                    <SwipeView>
+                        <SwipeView.RightItems>
+                            <SwipeItems>
+                                <SwipeItem Text="Edit"
+                                           BackgroundColor="DarkBlue"
+                                           CommandParameter="{Binding .}"
+                                           Invoked="SwipeItem_Invoked"/>
+                                <SwipeItem Text="Delete"
+                                           BackgroundColor="IndianRed"
+                                           CommandParameter="{Binding .}"
+                                           Invoked="SwipeItem_Invoked_1"/>
+                            </SwipeItems>
+                        </SwipeView.RightItems>
+                    <Grid RowSpacing="0" Margin="0,0,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="20"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <Label Text="{Binding title}"
+                                 Grid.Row="0" Grid.Column="1"
+                                 VerticalOptions="CenterAndExpand"
+                                 FontSize="25"
+                                 FontAttributes="Bold"
+                                 TextColor="Black"/>
+                        <Label Text="{Binding description}"
+                                 Grid.Row="1" Grid.Column="1"
+                                 FontSize="15"
+                                 TextColor="Black"
+                                 Margin="0,0,0,5"/>
+                            
+                    </Grid>
+                    </SwipeView>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+
+        </CollectionView>
+                       
+        
+
+
+            
+        
+    </StackLayout>
+
+</ContentPage>
+
+
+MainPage.xaml.cs
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Xamarin.Forms;
+
+
+
+namespace NoteTakingApp
+{
+    public partial class MainPage : ContentPage
+    {
+        public MainPage()
+        {
+            InitializeComponent();
+            
+        }
+
+        async void Button_Clicked(object sender, EventArgs e)
+        {
+            await Navigation.PushAsync(new NewNotePage());
+
+        }
+
+        protected override async void OnAppearing()
+        {
+            try
+            {
+                base.OnAppearing();
+                TheCollectionView.ItemsSource = await App.Database.ReadNotes();
+            }
+            catch { }
+        }
+
+        private async void SwipeItem_Invoked(object sender, EventArgs e)
+        {
+            var item = sender as SwipeItem;
+            var emp = item.CommandParameter as notes;
+            await Navigation.PushAsync(new NewNotePage(emp));
+
+        }
+
+        private async void SwipeItem_Invoked_1(object sender, EventArgs e)
+        {
+            var item = sender as SwipeItem;
+            var emp = item.CommandParameter as notes;
+            var result = await DisplayAlert("Delete", $"Delete {emp.title} from My Notes?", "Yes", "No");
+            if(result)
+            {
+                await App.Database.DeleteNotes(emp);
+                TheCollectionView.ItemsSource = await App.Database.ReadNotes();
+            }
+            
+
+
+        }
+    }
+}
+
+NewNotePage.xaml
+
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="NoteTakingApp.NewNotePage">
+    <ContentPage.Content>
+        <StackLayout BackgroundColor="LightCyan">
+            <Frame CornerRadius="30" 
+                   Padding="20,0,20,0" 
+                   Margin="10,10,10,0">
+                <Entry Placeholder="Note Title" 
+                       x:Name="titleEntry"
+                       PlaceholderColor="Gray" 
+                       FontSize="25" TextColor="Black" 
+                       Margin="0,0,0,0" 
+                       ClearButtonVisibility="WhileEditing" 
+                       MaxLength="22" 
+                       FontAttributes="Bold">
+                    
+                </Entry>  
+            </Frame>
+            
+            <Frame CornerRadius="30" Margin="15,5,15,5">
+                <Editor x:Name="TextBox" 
+                        Placeholder="Note it here..." 
+                        HeightRequest="426" 
+                        PlaceholderColor="Gray" 
+                        FontSize="20">
+                    
+                </Editor>  
+            </Frame>
+            
+                <Button x:Name="texttovoicebutton" 
+                    BackgroundColor="LightBlue" 
+                    Text="Text to Voice" 
+                    TextColor="DarkBlue" 
+                    FontAttributes="Bold" 
+                    CornerRadius="15" 
+                    Padding="0,10,0,10" 
+                    Margin="110,0,110,0" 
+                    Clicked="Button_Clicked">
+                </Button>
+                <Button Text="Save" 
+                    TextColor="DarkBlue" 
+                    BackgroundColor="LightBlue" 
+                    CornerRadius="15" 
+                    Margin="110,0,110,0" 
+                    FontAttributes="Bold"
+                    Clicked="Button_Clicked_1">
+                </Button>
+</StackLayout>
+    </ContentPage.Content>
+</ContentPage>
+
+
+NewNotePage.xaml.cs
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+using Xamarin.Forms;
+using Xamarin.Forms.Xaml;
+using Xamarin.Essentials;
+
+
+namespace NoteTakingApp
+{
+    [XamlCompilation(XamlCompilationOptions.Compile)]
+    public partial class NewNotePage : ContentPage
+    {
+        public NewNotePage()
+        {
+            InitializeComponent();
+        }
+        notes n;
+        public NewNotePage(notes note)
+        {
+            InitializeComponent();
+            n = note;
+            titleEntry.Text = note.title;
+            TextBox.Text = note.description;
+            titleEntry.Focus();
+        }
+
+        private void Button_Clicked(object sender, EventArgs e)
+        {
+            TextToSpeech.SpeakAsync(TextBox.Text);
+
+        }
+
+        async private void Button_Clicked_1(object sender, EventArgs e)
+        {
+            if(string.IsNullOrWhiteSpace(TextBox.Text) || string.IsNullOrWhiteSpace(titleEntry.Text))
+            {
+                await DisplayAlert("Invalid", "Blank or whiteSpace value is Invalid!", "OK");
+            }
+            else if(n!=null)
+            {
+                UpdateNote();
+
+            }
+            else
+            {
+                AddNewNote();
+            }
+
+        }
+        async void AddNewNote()
+        {
+            await App.Database.CreateNotes(new notes
+            {
+                title = titleEntry.Text,
+                description = TextBox.Text
+
+
+            });
+            await Navigation.PopAsync();
+        }
+
+        async void UpdateNote()
+        {
+            n.title = titleEntry.Text;
+            n.description = TextBox.Text;   
+            await App.Database.UpdateNotes(n);
+            await Navigation.PopAsync();
+        }
+
+        
+    }
+}
+notes.cs
+
+using System;
+using System.Collections.Generic;
+using System.Text;
+using SQLite;
+
+namespace NoteTakingApp
+{
+    public class notes
+    {
+        [PrimaryKey, AutoIncrement]
+        public int Id { get; set; }
+        [MaxLength(100)]
+        public String title { get; set; }
+        public string description { get; set; }
+        
+    }
+}
+
+
+database.cs
+
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Threading.Tasks;
+using SQLite;
+
+namespace NoteTakingApp
+{
+    public class database
+    {
+        private readonly SQLiteAsyncConnection _database;
+
+        public database (String dbPath)
+        {
+            _database = new SQLiteAsyncConnection (dbPath);
+            _database.CreateTableAsync<notes>();
+        }
+        
+        public Task<int> CreateNotes(notes note)
+        {
+            return _database.InsertAsync(note);
+        }
+        public Task<List<notes>> ReadNotes()
+        {
+            return _database.Table<notes>().ToListAsync();
+        }
+        public Task <int> UpdateNotes(notes note)
+        {
+            return _database.UpdateAsync(note);
+        }
+
+        public Task<int> DeleteNotes(notes note)
+        {
+            return _database.DeleteAsync(note);
+        }
+    }
+}
+
+
+App.xaml
+
+using System;
+using System.IO;
+using Xamarin.Forms;
+using Xamarin.Forms.Xaml;
+
+namespace NoteTakingApp
+{
+    public partial class App : Application
+    {
+        private static database database;
+        public static database Database
+        {
+            get
+            {
+                if(database == null)
+                {
+                    database = new database(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "note.db3"));
+                }
+                return database;
+
+            }
+            
+
+        }
+        public App()
+        {
+            InitializeComponent();
+
+            MainPage = new NavigationPage(new MainPage());
+        }
+
+        protected override void OnStart()
+        {
+        }
+
+        protected override void OnSleep()
+        {
+        }
+
+        protected override void OnResume()
+        {
+        }
+    }
+}
+
+
+
